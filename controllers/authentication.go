@@ -6,6 +6,8 @@ package controllers
 
 import (
 	"context"
+	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -238,7 +240,27 @@ func (ctr *AuthenticationController) Login(c echo.Context) error {
 		RefreshToken: tokens.RefreshToken,
 	}
 
+	setJWTCookie(c, response)
+
 	return c.JSONPretty(http.StatusOK, response, " ")
+}
+
+func setJWTCookie(c echo.Context, response *LoginResponse) {
+	tokenAsJSON, _ := json.Marshal(response)
+	tokenAsJSONb64 := base64.StdEncoding.EncodeToString(tokenAsJSON)
+	setCookie(c, "jwt_token", tokenAsJSONb64)
+}
+
+func setCookie(c echo.Context, cookieName, cookieValue string) {
+	cookie := &http.Cookie{
+		Name:     cookieName,
+		Value:    cookieValue,
+		HttpOnly: true,
+		Secure:   true,
+		SameSite: http.SameSiteStrictMode,
+		Path:     "/",
+	}
+	c.SetCookie(cookie)
 }
 
 type logoutRequest struct {
@@ -422,6 +444,9 @@ func (ctr *AuthenticationController) VerifyFactor(c echo.Context) error {
 				AccessToken:  tokens.AccessToken,
 				RefreshToken: tokens.RefreshToken,
 			}
+
+			setJWTCookie(c, response)
+
 			return c.JSON(http.StatusOK, response)
 		}
 	}
