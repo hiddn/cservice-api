@@ -140,7 +140,12 @@ type loginRequest struct {
 	Password string `json:"password" validate:"required,max=72" extensions:"x-order=1"`
 }
 
-// LoginResponse is the response sent to a client upon successful FULL authentication
+// RefreshCookie is the cookie set to a client upon successful FULL authentication
+type RefreshCookie struct {
+	RefreshToken string `json:"refresh_token" extensions:"x-order=1"`
+}
+
+// CookieResponse is the response sent to a client upon successful FULL authentication
 type LoginResponse struct {
 	AccessToken  string `json:"access_token" extensions:"x-order=0"`
 	RefreshToken string `json:"refresh_token,omitempty" extensions:"x-order=1"`
@@ -240,13 +245,16 @@ func (ctr *AuthenticationController) Login(c echo.Context) error {
 		RefreshToken: tokens.RefreshToken,
 	}
 
-	setJWTCookie(c, response)
+	setJWTCookie(c, response.RefreshToken)
 
 	return c.JSONPretty(http.StatusOK, response, " ")
 }
 
-func setJWTCookie(c echo.Context, response *LoginResponse) {
-	tokenAsJSON, _ := json.Marshal(response)
+func setJWTCookie(c echo.Context, refreshToken string) {
+	rt := RefreshCookie{
+		RefreshToken: refreshToken,
+	}
+	tokenAsJSON, _ := json.Marshal(rt)
 	tokenAsJSONb64 := base64.StdEncoding.EncodeToString(tokenAsJSON)
 	setCookie(c, "jwt_token", tokenAsJSONb64)
 }
@@ -445,7 +453,7 @@ func (ctr *AuthenticationController) VerifyFactor(c echo.Context) error {
 				RefreshToken: tokens.RefreshToken,
 			}
 
-			setJWTCookie(c, response)
+			setJWTCookie(c, response.RefreshToken)
 
 			return c.JSON(http.StatusOK, response)
 		}
