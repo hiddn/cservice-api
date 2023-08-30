@@ -55,6 +55,10 @@ func NewEcho() *echo.Echo {
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
 	e.Use(middleware.RequestID())
+	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
+		AllowOrigins: []string{"https://auth.undernet.org"}, /* Hardcoding temporarily "https://auth.undernet.org" */
+		AllowHeaders: []string{echo.HeaderOrigin, echo.HeaderContentType, echo.HeaderAccept},
+	}))
 
 	// API documentation (swagger)
 	e.GET("/documentation/*", echoSwagger.WrapHandler)
